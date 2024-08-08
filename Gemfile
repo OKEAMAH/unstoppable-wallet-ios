@@ -2,8 +2,8 @@ source 'https://rubygems.org'
 ruby '~> 3.0'
 
 group :fastlane do
-  gem 'fastlane'
-  gem 'xcodeproj'
+  gem 'fastlane', '>= 2.221.0'
+  gem 'xcodeproj', '>= 1.25.0'
   gem 'xcode-install'
 end
 
