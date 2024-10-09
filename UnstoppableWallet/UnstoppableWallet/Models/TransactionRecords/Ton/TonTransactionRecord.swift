@@ -1,35 +1,67 @@
 import Foundation
 import MarketKit
-import TonKitKmm
+import TonKit
+import TonSwift
 
 class TonTransactionRecord: TransactionRecord {
+    let lt: Int64
+    let inProgress: Bool
     let fee: TransactionValue?
-    let memo: String?
+    let actions: [Action]
 
-    init(source: TransactionSource, transaction: TonTransactionWithTransfers, feeToken: Token) {
-        fee = transaction.fee.map { .coinValue(token: feeToken, value: TonAdapter.amount(kitAmount: $0)) }
-        memo = transaction.memo
+    init(source: TransactionSource, event: Event, baseToken: Token, actions: [Action]) {
+        lt = event.lt
+        inProgress = event.inProgress
+        fee = .coinValue(token: baseToken, value: TonAdapter.amount(kitAmount: abs(event.extra)))
+        self.actions = actions
 
         super.init(
             source: source,
-            uid: transaction.hash,
-            transactionHash: transaction.hash,
+            uid: event.id,
+            transactionHash: event.id,
             transactionIndex: 0,
             blockHeight: nil,
             confirmationsThreshold: nil,
-            date: Date(timeIntervalSince1970: TimeInterval(transaction.timestamp)),
-            failed: false
+            date: Date(timeIntervalSince1970: TimeInterval(event.timestamp)),
+            failed: false,
+            spam: event.isScam
         )
     }
 
     override func status(lastBlockHeight _: Int?) -> TransactionStatus {
-        .completed
+        inProgress ? .pending : .completed
+    }
+
+    override var mainValue: TransactionValue? {
+        if actions.count == 1, let action = actions.first {
+            switch action.type {
+            case let .send(value, _, _, _): return value
+            case let .receive(value, _, _): return value
+            case let .burn(value): return value
+            case let .mint(value): return value
+            case let .contractCall(_, value, _): return value
+            default: return nil
+            }
+        }
+
+        return nil
     }
 }
 
 extension TonTransactionRecord {
-    struct Transfer {
-        let address: String
-        let value: TransactionValue
+    struct Action {
+        let type: `Type`
+        let status: TransactionStatus
+
+        enum `Type` {
+            case send(value: TransactionValue, to: String, sentToSelf: Bool, comment: String?)
+            case receive(value: TransactionValue, from: String, comment: String?)
+            case burn(value: TransactionValue)
+            case mint(value: TransactionValue)
+            case swap(routerName: String?, routerAddress: String, valueIn: TransactionValue, valueOut: TransactionValue)
+            case contractDeploy(interfaces: [String])
+            case contractCall(address: String, value: TransactionValue, operation: String)
+            case unsupported(type: String)
+        }
     }
 }

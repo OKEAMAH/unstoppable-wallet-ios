@@ -19,18 +19,22 @@ class TransactionInfoViewItemFactory {
 
     private func amount(source: TransactionSource, title: String, subtitle: String?, transactionValue: TransactionValue, rate: CurrencyValue?, type: AmountType, balanceHidden: Bool) -> TransactionInfoModule.ViewItem {
         let iconUrl = transactionValue.coin?.imageUrl
+        let iconAlternativeUrl = transactionValue.coin?.image
         let iconPlaceholderImageName = source.blockchainType.placeholderImageName(tokenProtocol: transactionValue.tokenProtocol)
+
+        let coin = transactionValue.token.flatMap { $0.isCustom ? nil : $0.coin }
 
         if transactionValue.isMaxValue {
             return .amount(
                 title: title,
                 subtitle: subtitle,
                 iconUrl: iconUrl,
+                iconAlternativeUrl: iconAlternativeUrl,
                 iconPlaceholderImageName: iconPlaceholderImageName,
                 coinAmount: balanceHidden ? BalanceHiddenManager.placeholder : "∞ \(transactionValue.coinCode)",
                 currencyAmount: balanceHidden ? BalanceHiddenManager.placeholder : "transactions.value.unlimited".localized,
                 type: type,
-                coinUid: transactionValue.coin?.uid
+                coin: coin
             )
         } else {
             var currencyValue: CurrencyValue?
@@ -43,11 +47,12 @@ class TransactionInfoViewItemFactory {
                 title: title,
                 subtitle: subtitle,
                 iconUrl: iconUrl,
+                iconAlternativeUrl: iconAlternativeUrl,
                 iconPlaceholderImageName: iconPlaceholderImageName,
                 coinAmount: balanceHidden ? BalanceHiddenManager.placeholder : transactionValue.formattedFull(signType: type.signType) ?? "n/a".localized,
                 currencyAmount: balanceHidden ? BalanceHiddenManager.placeholder : currencyValue.flatMap { ValueFormatter.instance.formatFull(currencyValue: $0) },
                 type: type,
-                coinUid: transactionValue.coin?.uid
+                coin: coin
             )
         }
     }
@@ -207,7 +212,7 @@ class TransactionInfoViewItemFactory {
         return condition ? trueType : (falseType ?? trueType)
     }
 
-    private func receiveSection(source: TransactionSource, transactionValue: TransactionValue, from: String?, rates: [Coin: CurrencyValue], nftMetadata: [NftUid: NftAssetBriefMetadata] = [:], balanceHidden: Bool) -> [TransactionInfoModule.ViewItem] {
+    private func receiveSection(source: TransactionSource, transactionValue: TransactionValue, from: String?, rates: [Coin: CurrencyValue], nftMetadata: [NftUid: NftAssetBriefMetadata] = [:], memo: String? = nil, status: TransactionStatus? = nil, balanceHidden: Bool) -> [TransactionInfoModule.ViewItem] {
         var viewItems = [TransactionInfoModule.ViewItem]()
 
         let mint = from == zeroAddress
@@ -263,6 +268,14 @@ class TransactionInfoViewItemFactory {
 
         if let rateViewItem {
             viewItems.append(rateViewItem)
+        }
+
+        if let memo {
+            viewItems.append(.memo(text: memo))
+        }
+
+        if let status {
+            viewItems.append(.status(status: status))
         }
 
         return viewItems
@@ -549,28 +562,70 @@ class TransactionInfoViewItemFactory {
 
             feeViewItem = .fee(title: "tx_info.fee".localized, value: feeString(transactionValue: record.fee, rate: _rate(record.fee)))
 
-        case let record as TonIncomingTransactionRecord:
-            if let transfer = record.transfer {
-                sections.append(.init(receiveSection(source: record.source, transactionValue: transfer.value, from: transfer.address, rates: item.rates, balanceHidden: balanceHidden)))
-            }
-
-            if let memo = record.memo, !memo.isEmpty {
-                sections.append(.init([.memo(text: memo)]))
-            }
-        case let record as TonOutgoingTransactionRecord:
-            for transfer in record.transfers {
-                sections.append(.init(sendSection(source: record.source, transactionValue: transfer.value, to: transfer.address, rates: item.rates, balanceHidden: balanceHidden)))
-            }
-
-            if let memo = record.memo, !memo.isEmpty {
-                sections.append(.init([.memo(text: memo)]))
-            }
-
-            feeViewItem = record.fee.map { .fee(title: "tx_info.fee".localized, value: feeString(transactionValue: $0, rate: _rate($0))) }
-
         case let record as TonTransactionRecord:
-            if let memo = record.memo, !memo.isEmpty {
-                sections.append(.init([.memo(text: memo)]))
+            for action in record.actions {
+                var viewItems: [TransactionInfoModule.ViewItem]
+
+                switch action.type {
+                case let .send(value, to, sentToSelf, comment):
+                    viewItems = sendSection(source: record.source, transactionValue: value, to: to, rates: item.rates, sentToSelf: sentToSelf, balanceHidden: balanceHidden)
+
+                    if let comment {
+                        viewItems.append(.memo(text: comment))
+                    }
+
+                    if sentToSelf {
+                        viewItems.append(.sentToSelf)
+                    }
+
+                case let .receive(value, from, comment):
+                    viewItems = receiveSection(source: record.source, transactionValue: value, from: from, rates: item.rates, balanceHidden: balanceHidden)
+
+                    if let comment {
+                        viewItems.append(.memo(text: comment))
+                    }
+
+                case let .burn(value):
+                    viewItems = sendSection(source: record.source, transactionValue: value, to: zeroAddress, rates: item.rates, balanceHidden: balanceHidden)
+
+                case let .mint(value):
+                    viewItems = receiveSection(source: record.source, transactionValue: value, from: zeroAddress, rates: item.rates, balanceHidden: balanceHidden)
+
+                case let .swap(routerName, routerAddress, valueIn, valueOut):
+                    viewItems = [
+                        amount(source: record.source, title: youPayString(status: status), subtitle: fullBadge(transactionValue: valueIn), transactionValue: valueIn, rate: _rate(valueIn), type: type(value: valueIn, .outgoing), balanceHidden: balanceHidden),
+                        amount(source: record.source, title: youGetString(status: status), subtitle: fullBadge(transactionValue: valueOut), transactionValue: valueOut, rate: _rate(valueOut), type: type(value: valueOut, .incoming), balanceHidden: balanceHidden),
+                        .service(value: routerName ?? routerAddress.shortened),
+                    ]
+
+                    if let priceString = priceString(valueIn: valueIn, valueOut: valueOut, coinPriceIn: _rate(valueIn)) {
+                        viewItems.append(.price(price: priceString))
+                    }
+
+                case let .contractDeploy(interfaces):
+                    viewItems = [
+                        .actionTitle(iconName: nil, iconDimmed: false, title: "transactions.contract_deploy".localized, subTitle: interfaces.joined(separator: ", ")),
+                    ]
+
+                case let .contractCall(address, value, operation):
+                    viewItems = [
+                        .actionTitle(iconName: record.source.blockchainType.iconPlain32, iconDimmed: false, title: "transactions.contract_call".localized, subTitle: operation),
+                        .to(value: address, valueTitle: nil, contactAddress: nil)
+                    ]
+
+                    viewItems.append(contentsOf: sendSection(source: record.source, transactionValue: value, to: nil, rates: item.rates, balanceHidden: balanceHidden))
+
+                case let .unsupported(type):
+                    viewItems = [.fee(title: "Action", value: type)]
+                }
+
+                switch action.status {
+                case .failed:
+                    viewItems.append(.status(status: action.status))
+                default: ()
+                }
+
+                sections.append(.init(viewItems))
             }
 
             feeViewItem = record.fee.map { .fee(title: "tx_info.fee".localized, value: feeString(transactionValue: $0, rate: _rate($0))) }

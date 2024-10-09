@@ -15,6 +15,7 @@ enum AppConfig {
     static let appGitHubRepository = "unstoppable-wallet-ios"
     static let appTwitterAccount = "unstoppablebyhs"
     static let appTelegramAccount = "unstoppable_announcements"
+    static let appTokenTelegramAccount = "BeUnstoppable_bot"
     static let mempoolSpaceUrl = "https://mempool.space"
     static let guidesIndexUrl = URL(string: "https://raw.githubusercontent.com/horizontalsystems/blockchain-crypto-guides/v1.2/index.json")!
     static let faqIndexUrl = URL(string: "https://raw.githubusercontent.com/horizontalsystems/unstoppable-wallet-website/master/src/faq.json")!
@@ -31,6 +32,7 @@ enum AppConfig {
         .polygon: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
         .avalanche: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
         .optimism: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
+        .base: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
         .arbitrumOne: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
         .gnosis: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
         .fantom: "0xA24c159C7f1E4A04dab7c364C2A8b87b3dBa4cd1",
@@ -83,6 +85,10 @@ enum AppConfig {
         (Bundle.main.object(forInfoDictionaryKey: "OptimismEtherscanApiKey") as? String) ?? ""
     }
 
+    static var basescanKey: String {
+        (Bundle.main.object(forInfoDictionaryKey: "BasescanApiKey") as? String) ?? ""
+    }
+
     static var bscscanKey: String {
         (Bundle.main.object(forInfoDictionaryKey: "BscscanApiKey") as? String) ?? ""
     }
@@ -129,12 +135,20 @@ enum AppConfig {
         (Bundle.main.object(forInfoDictionaryKey: "OneInchCommissionAddress") as? String).flatMap { $0.isEmpty ? nil : $0 }
     }
 
+    static var referralAppServerUrl: String {
+        (Bundle.main.object(forInfoDictionaryKey: "ReferralAppServerUrl") as? String) ?? ""
+    }
+
     static var defaultWords: String {
         Bundle.main.object(forInfoDictionaryKey: "DefaultWords") as? String ?? ""
     }
 
     static var defaultPassphrase: String {
         Bundle.main.object(forInfoDictionaryKey: "DefaultPassphrase") as? String ?? ""
+    }
+
+    static var defaultWatchAddress: String? {
+        Bundle.main.object(forInfoDictionaryKey: "DefaultWatchAddress") as? String
     }
 
     static var sharedCloudContainer: String? {

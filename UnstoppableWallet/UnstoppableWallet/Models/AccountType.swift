@@ -82,8 +82,9 @@ enum AccountType {
             case (.fantom, .native), (.fantom, .eip20): return true
             case (.arbitrumOne, .native), (.arbitrumOne, .eip20): return true
             case (.optimism, .native), (.optimism, .eip20): return true
+            case (.base, .native), (.base, .eip20): return true
             case (.tron, .native), (.tron, .eip20): return true
-            case (.ton, .native): return true
+            case (.ton, .native), (.ton, .jetton): return true
             default: return false
             }
         case let .hdExtendedKey(key):
@@ -113,6 +114,7 @@ enum AccountType {
             case (.fantom, .native), (.fantom, .eip20): return true
             case (.arbitrumOne, .native), (.arbitrumOne, .eip20): return true
             case (.optimism, .native), (.optimism, .eip20): return true
+            case (.base, .native), (.base, .eip20): return true
             default: return false
             }
         case .tronAddress:
@@ -122,7 +124,7 @@ enum AccountType {
             }
         case .tonAddress:
             switch (token.blockchainType, token.type) {
-            case (.ton, .native): return true
+            case (.ton, .native), (.ton, .jetton): return true
             default: return false
             }
         case let .btcAddress(_, blockchainType, tokenType):
@@ -319,7 +321,7 @@ extension AccountType {
         case .evmAddress:
             return (try? EvmKit.Address(hex: string)).map { AccountType.evmAddress(address: $0) }
         case .tronAddress:
-            let hexData = Data(hex: string)
+            let hexData = string.hs.hexData ?? Data()
 
             let address: TronKit.Address?
             if !hexData.isEmpty { // android convention address

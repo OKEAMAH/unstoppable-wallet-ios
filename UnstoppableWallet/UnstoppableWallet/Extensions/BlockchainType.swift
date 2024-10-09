@@ -1,6 +1,7 @@
 import EvmKit
 import MarketKit
 import NftKit
+import SwiftUI
 import UIKit
 
 extension BlockchainType {
@@ -18,6 +19,7 @@ extension BlockchainType {
         .arbitrumOne,
         .gnosis,
         .fantom,
+        .base,
         .binanceSmartChain,
         .binanceChain,
         .tron,
@@ -52,6 +54,7 @@ extension BlockchainType {
             .tron,
             .ton,
             .polygon,
+            .base,
             .avalanche,
             .zcash,
             .bitcoinCash,
@@ -70,14 +73,14 @@ extension BlockchainType {
 
     var resendable: Bool {
         switch self {
-        case .optimism, .arbitrumOne: return false
+        case .optimism, .arbitrumOne, .base: return false
         default: return true
         }
     }
 
     var rollupFeeContractAddress: EvmKit.Address? {
         switch self {
-        case .optimism: return try? EvmKit.Address(hex: "0x420000000000000000000000000000000000000F")
+        case .optimism, .base: return try? EvmKit.Address(hex: "0x420000000000000000000000000000000000000F")
         default: return nil
         }
     }
@@ -113,7 +116,7 @@ extension BlockchainType {
             }
         case .evmPrivateKey, .evmAddress:
             switch self {
-            case .ethereum, .binanceSmartChain, .polygon, .avalanche, .optimism, .arbitrumOne, .gnosis, .fantom: return true
+            case .ethereum, .binanceSmartChain, .polygon, .avalanche, .optimism, .arbitrumOne, .gnosis, .fantom, .base: return true
             default: return false
             }
         case .tronAddress:
@@ -142,6 +145,7 @@ extension BlockchainType {
         case .gnosis: return "xDAI, ERC20 tokens"
         case .fantom: return "FTM, ERC20 tokens"
         case .optimism: return "L2 chain"
+        case .base: return "L2 chain"
         case .arbitrumOne: return "L2 chain"
         case .zcash: return "ZEC"
         case .dash: return "DASH"
@@ -162,7 +166,21 @@ extension BlockchainType {
         case .polygon: return UIColor(hex: 0x8247E5)
         case .avalanche: return UIColor(hex: 0xD74F49)
         case .optimism: return UIColor(hex: 0xEB3431)
+        case .base: return UIColor(hex: 0x2759F6)
         case .arbitrumOne: return UIColor(hex: 0x96BEDC)
+        default: return nil
+        }
+    }
+
+    var brandColorNew: Color? {
+        switch self {
+        case .ethereum: return Color(hex: 0x6B7196)
+        case .binanceSmartChain: return Color(hex: 0xF3BA2F)
+        case .polygon: return Color(hex: 0x8247E5)
+        case .avalanche: return Color(hex: 0xD74F49)
+        case .optimism: return Color(hex: 0xEB3431)
+        case .base: return Color(hex: 0x2759F6)
+        case .arbitrumOne: return Color(hex: 0x96BEDC)
         default: return nil
         }
     }

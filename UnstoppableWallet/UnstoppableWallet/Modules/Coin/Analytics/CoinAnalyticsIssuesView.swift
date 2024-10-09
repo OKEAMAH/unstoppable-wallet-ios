@@ -3,34 +3,36 @@ import SwiftUI
 
 struct CoinAnalyticsIssuesView: View {
     let viewItem: CoinAnalyticsViewModel.IssueBlockchainViewItem
+    @Binding var isPresented: Bool
 
-    @Environment(\.presentationMode) private var presentationMode
     @State private var currentTabIndex: Int = Tab.tokenDetectors.rawValue
 
     @State private var tokenExpandedIndices = Set<Int>()
     @State private var generalExpandedIndices = Set<Int>()
 
     var body: some View {
-        ThemeView {
-            VStack(spacing: 0) {
-                TabHeaderView(
-                    tabs: Tab.allCases.map(\.title),
-                    currentTabIndex: $currentTabIndex
-                )
+        ThemeNavigationView {
+            ThemeView {
+                VStack(spacing: 0) {
+                    TabHeaderView(
+                        tabs: Tab.allCases.map(\.title),
+                        currentTabIndex: $currentTabIndex
+                    )
 
-                TabView(selection: $currentTabIndex) {
-                    DetectorsView(items: viewItem.coreItems, expandedIndices: $tokenExpandedIndices).tag(Tab.tokenDetectors.rawValue)
-                    DetectorsView(items: viewItem.generalItems, expandedIndices: $generalExpandedIndices).tag(Tab.generalDetectors.rawValue)
+                    TabView(selection: $currentTabIndex) {
+                        DetectorsView(items: viewItem.coreItems, expandedIndices: $tokenExpandedIndices).tag(Tab.tokenDetectors.rawValue)
+                        DetectorsView(items: viewItem.generalItems, expandedIndices: $generalExpandedIndices).tag(Tab.generalDetectors.rawValue)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .ignoresSafeArea(edges: .bottom)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .ignoresSafeArea(edges: .bottom)
             }
-        }
-        .navigationTitle(viewItem.blockchain.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            Button("button.close".localized) {
-                presentationMode.wrappedValue.dismiss()
+            .navigationTitle(viewItem.blockchain.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                Button("button.close".localized) {
+                    isPresented = false
+                }
             }
         }
     }

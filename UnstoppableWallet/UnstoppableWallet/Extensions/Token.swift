@@ -18,6 +18,8 @@ extension Token {
             case .tron: return "TRC20"
             default: return blockchain.name
             }
+        case .jetton:
+            return "JETTON"
         case .bep2:
             return "BEP2"
         default:
@@ -43,6 +45,7 @@ extension Token {
         case .arbitrumOne: return true
         case .gnosis: return true
         case .fantom: return true
+        case .base: return true
         default: return false
         }
     }

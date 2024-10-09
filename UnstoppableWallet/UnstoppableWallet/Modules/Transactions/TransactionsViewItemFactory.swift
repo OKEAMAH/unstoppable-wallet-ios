@@ -59,12 +59,14 @@ class TransactionsViewItemFactory {
         switch value {
         case let .nftValue(nftUid, _, _, _):
             return .icon(
-                imageUrl: nftMetadata[nftUid]?.previewImageUrl,
+                url: nftMetadata[nftUid]?.previewImageUrl,
+                alternativeUrl: nil,
                 placeholderImageName: "placeholder_nft_32"
             )
         default:
             return .icon(
-                imageUrl: value.coin?.imageUrl,
+                url: value.coin?.imageUrl,
+                alternativeUrl: value.coin?.image,
                 placeholderImageName: source.blockchainType.placeholderImageName(tokenProtocol: value.tokenProtocol)
             )
         }
@@ -73,9 +75,11 @@ class TransactionsViewItemFactory {
     private func doubleValueIconType(source: TransactionSource, primaryValue: TransactionValue?, secondaryValue: TransactionValue?, nftMetadata: [NftUid: NftAssetBriefMetadata] = [:]) -> BaseTransactionsViewModel.IconType {
         let frontType: TransactionImageComponent.ImageType
         let frontUrl: String?
+        var frontAlternativeUrl: String?
         let frontPlaceholder: String
         let backType: TransactionImageComponent.ImageType
         let backUrl: String?
+        var backAlternativeUrl: String?
         let backPlaceholder: String
 
         if let primaryValue {
@@ -87,6 +91,7 @@ class TransactionsViewItemFactory {
             default:
                 frontType = .circle
                 frontUrl = primaryValue.coin?.imageUrl
+                frontAlternativeUrl = primaryValue.coin?.image
                 frontPlaceholder = source.blockchainType.placeholderImageName(tokenProtocol: primaryValue.tokenProtocol)
             }
         } else {
@@ -104,6 +109,7 @@ class TransactionsViewItemFactory {
             default:
                 backType = .circle
                 backUrl = secondaryValue.coin?.imageUrl
+                backAlternativeUrl = secondaryValue.coin?.image
                 backPlaceholder = source.blockchainType.placeholderImageName(tokenProtocol: secondaryValue.tokenProtocol)
             }
         } else {
@@ -112,7 +118,16 @@ class TransactionsViewItemFactory {
             backPlaceholder = "placeholder_circle_32"
         }
 
-        return .doubleIcon(frontType: frontType, frontUrl: frontUrl, frontPlaceholder: frontPlaceholder, backType: backType, backUrl: backUrl, backPlaceholder: backPlaceholder)
+        return .doubleIcon(
+            frontType: frontType,
+            frontUrl: frontUrl,
+            frontAlternativeUrl: frontAlternativeUrl,
+            frontPlaceholder: frontPlaceholder,
+            backType: backType,
+            backUrl: backUrl,
+            backAlternativeUrl: backAlternativeUrl,
+            backPlaceholder: backPlaceholder
+        )
     }
 
     private func iconType(source: TransactionSource, incomingValues: [TransactionValue], outgoingValues: [TransactionValue], nftMetadata: [NftUid: NftAssetBriefMetadata]) -> BaseTransactionsViewModel.IconType {
@@ -396,47 +411,76 @@ class TransactionsViewItemFactory {
             title = record.transaction.contract?.label ?? "transactions.unknown_transaction.title".localized
             subTitle = "transactions.unknown_transaction.description".localized()
 
-        case let record as TonIncomingTransactionRecord:
-            title = "transactions.receive".localized
-            if let transfer = record.transfer {
-                iconType = singleValueIconType(source: record.source, value: transfer.value)
-                subTitle = "transactions.from".localized(mapped(address: transfer.address, blockchainType: item.record.source.blockchainType))
-                primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: transfer.value), type: type(value: transfer.value, .incoming))
-            } else {
-                iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)
-                subTitle = ""
-            }
+        case let record as TonTransactionRecord:
+            if record.actions.count == 1, let action = record.actions.first {
+                switch action.type {
+                case let .send(value, to, _sentToSelf, _):
+                    iconType = singleValueIconType(source: record.source, value: value)
+                    title = "transactions.send".localized
+                    subTitle = "transactions.to".localized(mapped(address: to, blockchainType: item.record.source.blockchainType))
+                    primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: value, signType: _sentToSelf ? .never : .always), type: type(value: value, condition: _sentToSelf, .neutral, .outgoing))
 
-            if let currencyValue = item.currencyValue {
-                secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
-            }
+                    if let currencyValue = item.currencyValue {
+                        secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
+                    }
 
-        case let record as TonOutgoingTransactionRecord:
-            title = "transactions.send".localized
+                    sentToSelf = _sentToSelf
+                case let .receive(value, from, _):
+                    iconType = singleValueIconType(source: record.source, value: value)
+                    title = "transactions.receive".localized
+                    subTitle = "transactions.from".localized(mapped(address: from, blockchainType: item.record.source.blockchainType))
+                    primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: value), type: type(value: value, .incoming))
 
-            if !record.transfers.isEmpty {
-                iconType = singleValueIconType(source: record.source, value: record.transfers[0].value)
+                    if let currencyValue = item.currencyValue {
+                        secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
+                    }
+                case let .burn(value):
+                    iconType = singleValueIconType(source: record.source, value: value)
+                    title = "transactions.burn".localized
+                    subTitle = value.fullName
+                    primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: value), type: type(value: value, .outgoing))
 
-                if record.transfers.count == 1 {
-                    subTitle = "transactions.to".localized(mapped(address: record.transfers[0].address, blockchainType: item.record.source.blockchainType))
-                } else {
-                    subTitle = "transactions.multiple".localized
+                    if let currencyValue = item.currencyValue {
+                        secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
+                    }
+                case let .mint(value):
+                    iconType = singleValueIconType(source: record.source, value: value)
+                    title = "transactions.mint".localized
+                    subTitle = value.fullName
+                    primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: value), type: type(value: value, .incoming))
+
+                    if let currencyValue = item.currencyValue {
+                        secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
+                    }
+                case let .swap(routerName, routerAddress, valueIn, valueOut):
+                    iconType = doubleValueIconType(source: record.source, primaryValue: valueOut, secondaryValue: valueIn)
+                    title = "transactions.swap".localized
+                    subTitle = routerName ?? routerAddress.shortened
+                    primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: valueOut), type: type(value: valueOut, .incoming))
+                    secondaryValue = BaseTransactionsViewModel.Value(text: coinString(from: valueIn), type: type(value: valueIn, .outgoing))
+                case let .contractDeploy(interfaces):
+                    iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)
+                    title = "transactions.contract_deploy".localized
+                    subTitle = interfaces.joined(separator: ", ")
+                case let .contractCall(address, value, _):
+                    iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)
+                    title = "transactions.contract_call".localized
+                    subTitle = address.shortened
+                    primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: value), type: type(value: value, .outgoing))
+
+                    if let currencyValue = item.currencyValue {
+                        secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
+                    }
+                case let .unsupported(type):
+                    iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)
+                    title = "transactions.ton_transaction.title".localized
+                    subTitle = type
                 }
-
-                primaryValue = BaseTransactionsViewModel.Value(text: coinString(from: record.totalValue), type: type(value: record.totalValue, .outgoing))
             } else {
                 iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)
-                subTitle = ""
+                title = "transactions.ton_transaction.title".localized
+                subTitle = "transactions.multiple".localized
             }
-
-            if let currencyValue = item.currencyValue {
-                secondaryValue = BaseTransactionsViewModel.Value(text: currencyString(from: currencyValue), type: .secondary)
-            }
-
-        case is TonTransactionRecord:
-            iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)
-            title = "transactions.unknown_transaction.title".localized
-            subTitle = "transactions.unknown_transaction.description".localized()
 
         default:
             iconType = .localIcon(imageName: item.record.source.blockchainType.iconPlain32)

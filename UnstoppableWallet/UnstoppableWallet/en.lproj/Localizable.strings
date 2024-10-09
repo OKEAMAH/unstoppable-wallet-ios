@@ -1005,6 +1005,7 @@
 "coin_analytics.indicators.disclaimer" = "Always remember to apply risk management, and note that this is not financial advice.";
 "coin_analytics.indicators.info.title" = "Technical Indicators";
 "coin_analytics.indicators.info.description" = "We use the Bollinger Bands + RSI strategy to determine trading signals. All calculations are based on daily candlesticks and provide advice for a moderately long term. The essence of the strategy is that the asset price should reach an extreme, breaking out of the Bollinger Bands channel, and the RSI should be in the overbought/oversold zone. After the price returns to the channel, there is a high probability of the price returning to the mean values or attempting to break the channel from the other side. Note that the strategy may give several false signals during strong market movements before a correct signal appears.\n\nPlease remember that it is very important to apply risk management to trading and remember to cut losses if the market situation changes! ";
+"coin_analytics.indicators.details" = "Details";
 "coin_analytics.indicators.hide_details" = "Hide Details";
 "coin_analytics.indicators.show_details" = "Show Details";
 "coin_analytics.indicators.summary" = "Summary";
@@ -1224,6 +1225,7 @@
 "transactions.contract_call" = "Contract Call";
 "transactions.contract_creation" = "Contract Creation";
 "transactions.external_call" = "External Call";
+"transactions.contract_deploy" = "Contract Deploy";
 
 "transactions.to" = "To %@";
 "transactions.from" = "From %@";
@@ -1243,6 +1245,9 @@
 
 "transactions.unknown_transaction.title" = "Unknown Transaction";
 "transactions.unknown_transaction.description" = "Transaction can not be parsed";
+
+"transactions.ton_transaction.title" = "Ton Transaction";
+"transactions.contract" = "Contract";
 
 // Transaction Info
 
@@ -1302,6 +1307,7 @@
 "settings.contact_us" = "Contact Us";
 "settings.social_networks.label" = "Be Unstoppable";
 "settings.social_networks.footer" = "Learn and master crypto via exclusive videos. Get to know us informally. Be the first to see things we work on.";
+"settings.get_your_tokens" = "Get UWT Tokens";
 
 // Settings -> Base Currency
 
@@ -1656,6 +1662,7 @@
 "chart.about.read_less" = "Read Less";
 
 "coin_page.return_of_investments" = "ROI";
+"coin_page.return_of_investments.vs" = "vs %@";
 
 // Create Wallet
 
@@ -1718,10 +1725,13 @@
 "add_token.already_added" = "This token is already in the Coin Manager list";
 "add_token.invalid_contract_address" = "Invalid contract address";
 "add_token.invalid_bep2_symbol" = "Invalid BEP2 symbol";
+"add_token.invalid_ton_address" = "Invalid Ton address";
 "add_token.contract_address_not_found" = "Contract address not found in %@ blockchain";
+"add_token.jetton_master_not_found" = "Jetton Master not found in %@ blockchain";
 "add_token.bep2_symbol_not_found" = "BEP2 symbol not found";
 "add_token.input_placeholder.contract_address" = "Contract Address";
 "add_token.input_placeholder.bep2_symbol" = "BEP2 Symbol";
+"add_token.input_placeholder.jetton_master_address" = "Jetton Master Address";
 "add_token.coin_name" = "Coin Name";
 "add_token.symbol" = "Symbol";
 "add_token.decimals" = "Decimals";
@@ -1761,8 +1771,6 @@
 "wallet_connect_list.title" = "WalletConnect";
 "wallet_connect.list.empty_view_text" = "No active sessions";
 
-"wallet_connect.list.pairings" = "Pairings";
-"wallet_connect.list.version_text" = "Version %@";
 "wallet_connect.list.v1_bottom_text" = "In the first version of WalletConnect, you must go into sessions to see and confirm the request";
 "wallet_connect_list.new_connection" = "New Connection";
 "wallet_connect_list.disconnecting" = "Disconnecting";
